@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\NoteRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use App\Entity\Category;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -20,8 +21,7 @@ class Note
     #[ORM\Column(length: 80)]
     private ?string $title = null;
 
-    #[ORM\Column(length: 255)]
-    private ?string $slug = null;
+
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $content = null;
@@ -45,21 +45,31 @@ class Note
     private Collection $notifications;
 
     /**
-     * @var Collection<int, Category>
+    
      */
-    #[ORM\ManyToMany(targetEntity: Category::class, inversedBy: 'notes')]
-    private Collection $category;
+    #[ORM\ManyToOne(targetEntity: Category::class, inversedBy: 'notes')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Category $category = null;
 
     #[ORM\ManyToOne(inversedBy: 'notes')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $author = null;
+
+    /**
+     * @var Collection<int, Like>
+     */
+    #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'note')]
+    private Collection $likes;
+
+    #[ORM\Column(length: 255)]
+    private ?string $slug = null;
 
     public function __construct()
     {
         $this->title = uniqid('note-'); //GUID of title initialization
         $this->is_public = false; //boolean initialization 
         $this->notifications = new ArrayCollection();
-        $this->category = new ArrayCollection();
+        $this->likes = new ArrayCollection();
     }
 
     #[ORM\PrePersist]
@@ -92,17 +102,9 @@ class Note
         return $this;
     }
 
-    public function getSlug(): ?string
-    {
-        return $this->slug;
-    }
 
-    public function setSlug(string $slug): static
-    {
-        $this->slug = $slug;
 
-        return $this;
-    }
+
 
     public function getContent(): ?string
     {
@@ -197,26 +199,20 @@ class Note
     /**
      * @return Collection<int, Category>
      */
-    public function getCategory(): Collection
-    {
-        return $this->category;
-    }
 
-    public function addCategory(Category $category): static
-    {
-        if (!$this->category->contains($category)) {
-            $this->category->add($category);
-        }
+     public function getCategory(): ?Category
+     {
+         return $this->category;
+     }
 
+ 
+
+    public function setCategory(?Category $category): self
+    {
+        $this->category = $category;
         return $this;
     }
 
-    public function removeCategory(Category $category): static
-    {
-        $this->category->removeElement($category);
-
-        return $this;
-    }
 
     public function getAuthor(): ?User
     {
@@ -226,6 +222,48 @@ class Note
     public function setAuthor(?User $author): static
     {
         $this->author = $author;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Like>
+     */
+    public function getLikes(): Collection
+    {
+        return $this->likes;
+    }
+
+    public function addLike(Like $like): static
+    {
+        if (!$this->likes->contains($like)) {
+            $this->likes->add($like);
+            $like->setNote($this);
+        }
+
+        return $this;
+    }
+
+    public function removeLike(Like $like): static
+    {
+        if ($this->likes->removeElement($like)) {
+            // set the owning side to null (unless already changed)
+            if ($like->getNote() === $this) {
+                $like->setNote(null);
+            }
+        }
+
+        return $this;
+    }
+
+    public function getSlug(): ?string
+    {
+        return $this->slug;
+    }
+
+    public function setSlug(string $slug): static
+    {
+        $this->slug = $slug;
 
         return $this;
     }

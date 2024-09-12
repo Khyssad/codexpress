@@ -4,9 +4,11 @@ namespace App\DataFixtures;
 
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
-use App\Entity\Category; // Make sure to import your entities
+use App\Entity\Category;
 use App\Entity\User;
 use App\Entity\Note;
+use App\Entity\Network;
+use App\Entity\Like;
 use Faker\Factory;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\String\Slugger\SluggerInterface;
@@ -26,67 +28,84 @@ class AppFixtures extends Fixture
     {
         $faker = Factory::create('fr_FR');
 
-        // Array of categories
+        // Categories
         $categories = [
             'HTML' => 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/html5/html5-plain.svg',
-            'CSS' => 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/css3/css3-plain.svg',
-            'JavaScript' => 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-plain.svg',
-            'PHP' => 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/php/php-plain.svg',
-            'SQL' => 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/postgresql/postgresql-plain.svg',
-            'JSON' => 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/json/json-plain.svg',
-            'Python' => 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-plain.svg',
-            'Ruby' => 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/ruby/ruby-plain.svg',
-            'C++' => 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-plain.svg',
-            'Go' => 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-wordmark.svg',
-            'bash' => 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/bash/bash-plain.svg',
-            'Markdown' => 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/markdown/markdown-original.svg',
-            'Java' => 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original-wordmark.svg',
+            // ... (autres catégories)
         ];
-        $categoryArray = [];
+        $categoryEntities = [];
         foreach ($categories as $title => $icon) {
             $category = new Category();
-            $category
-                ->setTitle($title) // Corrected variable name
-                ->setIcon($icon); // Assuming there's a setIcon method for the icon field
-                array_push($categoryArray, $category);
+            $category->setTitle($title)->setIcon($icon);
+            $categoryEntities[] = $category;
             $manager->persist($category);
         }
 
-        // Creating users
+        // Users
+        $users = [];
         for ($i = 0; $i < 10; $i++) {
-            $username = $faker->userName;
-            $usernameFinal = $this->slugger->slug($username);
             $user = new User();
-            $user
-                ->setEmail($usernameFinal . '@' . $faker->freeEmailDomain()) // Added '@' to email
-                ->setUsername($username)
-                ->setPassword(
-                    $this->hasher->hashPassword($user, 'admin')
-                )
-                ->setRoles(['ROLE_USER']); // Corrected the setRoles method
+            $username = $faker->userName;
+            $user->setEmail($this->slugger->slug($username) . '@' . $faker->freeEmailDomain())
+                 ->setUsername($username)
+                 ->setPassword($this->hasher->hashPassword($user, 'password'))
+                 ->setRoles(['ROLE_USER'])
+                 ->setCreatedAt(new \DateTimeImmutable($faker->dateTimeBetween('-1 year')->format('Y-m-d H:i:s')))
+                 ->setUpdatedAt(new \DateTimeImmutable($faker->dateTimeBetween('-1 month')->format('Y-m-d H:i:s')));
+            
+            // Ajout de l'image de profil (nouvelle propriété)
+            $user->setImage($faker->imageUrl(640, 480, 'people'));
+            
+            $users[] = $user;
+            $manager->persist($user);
+        }
 
-            $manager->persist($user); // Persist the user
-
-            // Creating notes
+        // Notes
+        $notes = [];
+        foreach ($users as $user) {
             for ($j = 0; $j < 10; $j++) {
                 $note = new Note();
-                $note
-                    ->setTitle($faker->sentence())
-                    ->setSlug($this->slugger->slug($note->getTitle()))
-                    ->setContent($faker->paragraphs(4, true))
-                    ->setPublic($faker->boolean())
-                    ->setViews($faker->numberBetween(100, 1000))
-                    ->setAuthor($user) // Assuming this method exists
-                    //setAuthor=setUser
-                    ->addCategory($faker->randomElement($categoryArray)); // Adjust to use the correct categories
-                    //addCategory=setCategories
-
+                $title = $faker->sentence();
+                $note->setTitle($title)
+                     ->setSlug($this->slugger->slug($title))
+                     ->setContent($faker->paragraphs(4, true))
+                     ->setPublic($faker->boolean())
+                     ->setViews($faker->numberBetween(100, 1000))
+                     ->setAuthor($user)
+                     ->setCategory($faker->randomElement($categoryEntities))
+                     ->setCreatedAt(new \DateTimeImmutable($faker->dateTimeBetween('-1 year')->format('Y-m-d H:i:s')))
+                     ->setUpdatedAt(new \DateTimeImmutable($faker->dateTimeBetween('-1 month')->format('Y-m-d H:i:s')));
+                
+                $notes[] = $note;
                 $manager->persist($note);
             }
         }
 
-        // Flush all changes to the database
+        // Likes
+        foreach ($notes as $note) {
+            $likeCount = $faker->numberBetween(0, 20);
+            for ($k = 0; $k < $likeCount; $k++) {
+                $like = new Like();
+                $like->setNote($note)
+                     ->setCreator($faker->randomElement($users));
+                $manager->persist($like);
+            }
+        }
+
+        // Networks
+        $networkTypes = ['Twitter', 'LinkedIn', 'GitHub', 'Facebook'];
+        foreach ($users as $user) {
+            foreach ($networkTypes as $type) {
+                if ($faker->boolean(70)) {  // 70% chance to have this network
+                    $network = new Network();
+                    $network->setName($type)
+                            ->setUrl($faker->url)
+                            ->setCreator($user);
+                    $manager->persist($network);
+                }
+            }
+        }
+
         $manager->flush();
     }
 }
-

@@ -6,7 +6,7 @@ use App\Repository\CategoryRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
-
+use App\Entity\Note;
 #[ORM\Entity(repositoryClass: CategoryRepository::class)]
 class Category
 {
@@ -24,8 +24,9 @@ class Category
     /**
      * @var Collection<int, Note>
      */
-    #[ORM\ManyToMany(targetEntity: Note::class, mappedBy: 'category')]
+    #[ORM\OneToMany(targetEntity: Note::class, mappedBy: 'category')]
     private Collection $notes;
+
 
     public function __construct()
     {
@@ -70,20 +71,23 @@ class Category
         return $this->notes;
     }
 
-    public function addNote(Note $note): static
+    public function addNote(Note $note): self
     {
         if (!$this->notes->contains($note)) {
             $this->notes->add($note);
-            $note->addCategory($this);
+            $note->setCategory($this);
         }
 
         return $this;
     }
 
-    public function removeNote(Note $note): static
+    public function removeNote(Note $note): self
     {
         if ($this->notes->removeElement($note)) {
-            $note->removeCategory($this);
+            // set the owning side to null (unless already changed)
+            if ($note->getCategory() === $this) {
+                $note->setCategory(null);
+            }
         }
 
         return $this;
