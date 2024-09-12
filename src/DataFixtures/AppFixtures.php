@@ -77,7 +77,9 @@ class AppFixtures extends Fixture
                     ->setPublic($faker->boolean())
                     ->setViews($faker->numberBetween(100, 1000))
                     ->setAuthor($user) // Assuming this method exists
+                    //setAuthor=setUser
                     ->addCategory($faker->randomElement($categoryArray)); // Adjust to use the correct categories
+                    //addCategory=setCategories
 
                 $manager->persist($note);
             }
