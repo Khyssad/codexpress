@@ -146,4 +146,9 @@ class Notification
 
         return $this;
     }
+
+    public function isArchive(): ?bool
+    {
+        return $this->is_archive;
+    }
 }

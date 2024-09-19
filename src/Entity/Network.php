@@ -21,7 +21,7 @@ class Network
 
     #[ORM\ManyToOne(inversedBy: 'networks')]
     #[ORM\JoinColumn(nullable: false)]
-    private ?User $creator = null;
+    private ?User $author = null;
 
     public function getId(): ?int
     {
@@ -52,14 +52,14 @@ class Network
         return $this;
     }
 
-    public function getCreator(): ?User
+    public function getAuthor(): ?User
     {
-        return $this->creator;
+        return $this->author;
     }
 
-    public function setCreator(?User $creator): static
+    public function setAuthor(?User $author): static
     {
-        $this->creator = $creator;
+        $this->author = $author;
 
         return $this;
     }

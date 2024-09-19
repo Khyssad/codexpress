@@ -1,0 +1,12 @@
+			<a href="{{path('app_note_new')}}" class="p-2 border-2 rounded-md border-neutral-700">
+				{{ux_icon('mdi:plus-box-outline',{'class':'h-6 w-6 text-neutral-600 hover:text-violet-600'})}}
+			</a>
+			<a href="{{path('app_profile_edit')}}" class="p-1 border-2 rounded-md border-neutral-700">
+				{{ux_icon('mdi:cog-outline',{'class':'h-6 w-6 text-neutral-600 hover:text-violet-600'})}}
+			</a>
+			<a href="https://127.0.0.1:8000/logout" class="p-1 border-2 rounded-md border-neutral-700">
+				{{ux_icon('mdi:logout',{'class':'h-6 w-6 text-neutral-600 hover:text-violet-600'})}}
+			</a>
+			<a href="{{path('app_profile',{'username':app.user.username ?? ''})}}" class="p-2 transition-transform duration-200 ease-in-out rounded-full shadow-md hover:scale-95">
+				<img src="https://avatar.iran.liara.run/public/13" alt="profile picture" width="32" class="rounded-full">
+			</a>

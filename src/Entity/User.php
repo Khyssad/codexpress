@@ -6,6 +6,7 @@ use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
@@ -13,6 +14,7 @@ use Symfony\Component\Security\Core\User\UserInterface;
 #[ORM\HasLifecycleCallbacks]
 #[ORM\Table(name: '`user`')]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', fields: ['email'])]
+#[UniqueEntity(fields: ['email'], message: 'There is already an account with this email')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
@@ -35,7 +37,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?string $password = null;
 
-    #[ORM\Column(length: 120)]
+  // src/Entity/User.php
+
+  #[ORM\Column(length: 180, unique: true)]
     private ?string $username = null;
 
     /**
@@ -50,23 +54,27 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?\DateTimeImmutable $updated_at = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
+    #[ORM\Column(length: 255, nullable: false)]
     private ?string $image = null;
 
     /**
      * @var Collection<int, Like>
      */
-    #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'creator')]
+    #[ORM\OneToMany(targetEntity: Like::class, mappedBy: 'author')]
     private Collection $likes;
 
     /**
      * @var Collection<int, Network>
      */
-    #[ORM\OneToMany(targetEntity: Network::class, mappedBy: 'creator', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Network::class, mappedBy: 'author', orphanRemoval: true)]
     private Collection $networks;
+
+    #[ORM\Column]
+    private bool $isVerified = false;
 
     public function __construct()
     {
+        $this->image = "https://avatar.iran.liara.run/public/";
         $this->notes = new ArrayCollection();
         $this->likes = new ArrayCollection();
         $this->networks = new ArrayCollection();
@@ -163,7 +171,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->username;
     }
 
-    public function setUsername(string $username): static
+    public function setUsername(string $username): self
     {
         $this->username = $username;
 
@@ -248,7 +256,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if (!$this->likes->contains($like)) {
             $this->likes->add($like);
-            $like->setCreator($this);
+            $like->setAuthor($this);
         }
 
         return $this;
@@ -258,8 +266,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if ($this->likes->removeElement($like)) {
             // set the owning side to null (unless already changed)
-            if ($like->getCreator() === $this) {
-                $like->setCreator(null);
+            if ($like->getAuthor() === $this) {
+                $like->setAuthor(null);
             }
         }
 
@@ -278,7 +286,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if (!$this->networks->contains($network)) {
             $this->networks->add($network);
-            $network->setCreator($this);
+            $network->setAuthor($this);
         }
 
         return $this;
@@ -288,10 +296,22 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if ($this->networks->removeElement($network)) {
             // set the owning side to null (unless already changed)
-            if ($network->getCreator() === $this) {
-                $network->setCreator(null);
+            if ($network->getAuthor() === $this) {
+                $network->setAuthor(null);
             }
         }
+
+        return $this;
+    }
+
+    public function isVerified(): bool
+    {
+        return $this->isVerified;
+    }
+
+    public function setVerified(bool $isVerified): static
+    {
+        $this->isVerified = $isVerified;
 
         return $this;
     }

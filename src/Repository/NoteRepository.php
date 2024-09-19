@@ -16,28 +16,43 @@ class NoteRepository extends ServiceEntityRepository
         parent::__construct($registry, Note::class);
     }
 
-//    /**
-//     * @return Note[] Returns an array of Note objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('n')
-//            ->andWhere('n.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('n.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+   /**
+    * FindByQuery
+    * Méthode pour la recherche de note dans l'application CodeXpress
+    * @param string $query
+    * @return array
+    */
+   public function findByQuery($query): array
+   {
+       return $this->createQueryBuilder('n')
+           ->where('n.is_public = :is_public')
+           ->andWhere('n.title LIKE :q OR n.content LIKE :q')
+           ->setParameter('is_public', true)
+           ->setParameter('q', '%'. $query .'%')
+           ->orderBy('n.created_at', 'DESC')
+           ->setMaxResults(10)
+           ->getQuery()
+           ->getResult()
+       ;
+   }
 
-//    public function findOneBySomeField($value): ?Note
-//    {
-//        return $this->createQueryBuilder('n')
-//            ->andWhere('n.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+   /**
+    * Trouve les notes d'un auteur
+    * @param int $id
+    * @return array|null
+    */
+   public function findByAuthor($id): ?array
+   {
+       $result = $this->createQueryBuilder('n')
+           ->where('n.is_public = :is_public')
+           ->andWhere('n.author = :id')
+           ->setParameter('is_public', true)
+           ->setParameter('id', $id)
+           ->orderBy('n.created_at', 'DESC')
+           ->setMaxResults(3)
+           ->getQuery()
+           ->getResult();
+
+       return empty($result) ? null : $result;
+   }
 }
