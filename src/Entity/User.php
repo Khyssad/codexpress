@@ -37,9 +37,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?string $password = null;
 
-  // src/Entity/User.php
-
-  #[ORM\Column(length: 180, unique: true)]
+    #[ORM\Column(length: 180, unique: true)]
     private ?string $username = null;
 
     /**
@@ -69,6 +67,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: Network::class, mappedBy: 'author', orphanRemoval: true)]
     private Collection $networks;
 
+    /**
+     * @var Collection<int, Subscription>
+     */
+    #[ORM\OneToMany(targetEntity: Subscription::class, mappedBy: 'author')]
+    private Collection $subscriptions;
+
     #[ORM\Column]
     private bool $isVerified = false;
 
@@ -78,7 +82,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->notes = new ArrayCollection();
         $this->likes = new ArrayCollection();
         $this->networks = new ArrayCollection();
+        $this->subscriptions = new ArrayCollection();
     }
+
     #[ORM\PrePersist]
     public function setCreatedAtValue(): void
     {
@@ -91,6 +97,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->updated_at = new \DateTimeImmutable();
     }
+
     public function getId(): ?int
     {
         return $this->id;
@@ -298,6 +305,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             // set the owning side to null (unless already changed)
             if ($network->getAuthor() === $this) {
                 $network->setAuthor(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Subscription>
+     */
+    public function getSubscriptions(): Collection
+    {
+        return $this->subscriptions;
+    }
+
+    public function addSubscription(Subscription $subscription): self
+    {
+        if (!$this->subscriptions->contains($subscription)) {
+            $this->subscriptions->add($subscription);
+            $subscription->setAuthor($this);
+        }
+
+        return $this;
+    }
+
+    public function removeSubscription(Subscription $subscription): self
+    {
+        if ($this->subscriptions->removeElement($subscription)) {
+            // set the owning side to null (unless already changed)
+            if ($subscription->getAuthor() === $this) {
+                $subscription->setAuthor(null);
             }
         }
 

@@ -22,8 +22,8 @@ class Subscription
     #[ORM\ManyToMany(targetEntity: Offer::class)]
     private Collection $offer;
 
-    #[ORM\ManyToOne(targetEntity: User::class)]
-    #[ORM\JoinColumn(name: "author", referencedColumnName: "username", nullable: false)]
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: "subscriptions")]
+    #[ORM\JoinColumn(name: "author_id", referencedColumnName: "id", nullable: false)]
     private ?User $author = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
@@ -42,7 +42,6 @@ class Subscription
     {
         $this->offer = new ArrayCollection();
     }
-
 
     public function getId(): ?int
     {
@@ -66,6 +65,13 @@ class Subscription
         return $this;
     }
 
+    public function removeOffer(Offer $offer): static
+    {
+        $this->offer->removeElement($offer);
+
+        return $this;
+    }
+
     public function getAuthor(): ?User
     {
         return $this->author;
@@ -74,13 +80,6 @@ class Subscription
     public function setAuthor(?User $author): self
     {
         $this->author = $author;
-        return $this;
-    }
-
-    public function removeOffer(Offer $offer): static
-    {
-        $this->offer->removeElement($offer);
-
         return $this;
     }
 
